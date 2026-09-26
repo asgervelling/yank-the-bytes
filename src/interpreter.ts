@@ -1,5 +1,6 @@
 import { createInitialState, update } from "./engine.js";
 import type { AppEvent, Command, ElementId } from "./types.js";
+import { drawPulledRope } from "./visualize.js";
 
 function queryRequiredElement(id: ElementId): HTMLElement {
   const element = document.getElementById(id);
@@ -25,6 +26,7 @@ function executeCommand(
       fetch(command.url, { method: "HEAD" }).then((res) => {
         const header = res.headers.get("Content-Length");
         const totalBytes = header ? parseInt(header, 10) : null;
+        console.log("Content length:", totalBytes); // Debug
         dispatch({ type: "ContentLengthReceived", url: command.url, totalBytes });
       })
       break;
@@ -60,10 +62,12 @@ function executeCommand(
     case "SetClass":
       elements[command.elementId].classList.toggle(command.className, command.active);
       break;
+    case "DrawRope":
+      elements[command.elementId].innerHTML = drawPulledRope(command.progress);
   }
 }
 
-export function bootstrap(): void {
+export function initAndRun(): void {
   const elements: Readonly<Record<ElementId, HTMLElement>> = {
     "crank": queryRequiredElement("crank"),
     "acceleration": queryRequiredElement("acceleration"),
@@ -71,6 +75,7 @@ export function bootstrap(): void {
     "text-sink": queryRequiredElement("text-sink"),
     "empty-hint": queryRequiredElement("empty-hint"),
     "stream-output": queryRequiredElement("stream-output"),
+    "pulled-rope": queryRequiredElement("pulled-rope"),
   };
 
   let state = createInitialState([

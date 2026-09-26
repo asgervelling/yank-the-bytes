@@ -1,6 +1,8 @@
 import type { AppEvent, AppState, Command, File, Stream, StreamableFile, UpdateResult } from "./types.js";
+import { toProgress } from "./visualize.js";
 
-const PULL_FACTOR = 0.3;
+const PULL_FACTOR_SMALL = 0.3;
+const PULL_FACTOR_LARGE = 50;
 
 export function createInitialState(availableFiles: File[]): AppState {
   return {
@@ -59,8 +61,11 @@ function handleTick(s: AppState): UpdateResult {
   if (velocity > 0 && 
       s.stream !== undefined &&
       s.stream.bytes.length > 0) {
+    const pullFactor = s.stream.bytes.length > 1000000
+      ? PULL_FACTOR_LARGE
+      : PULL_FACTOR_SMALL;
     const bytesToPull = Math.min(
-      Math.floor(velocity * PULL_FACTOR), s.stream.bytes.length);
+      Math.floor(velocity * pullFactor), s.stream.bytes.length);
 
     if (bytesToPull > 0) {
       const text = s.stream.decoder.decode(
@@ -72,15 +77,20 @@ function handleTick(s: AppState): UpdateResult {
         commands.push({ type: "SetClass", elementId: "stream-output", className: "hidden", active: false });
       }
 
+      const bytesConsumed = s.stream.bytesConsumed + bytesToPull;
       nextState = {
         ...nextState,
         stream: {
           ...s.stream,
           bytes: s.stream.bytes.slice(bytesToPull),
-          bytesConsumed: s.stream.bytesConsumed + bytesToPull,
+          bytesConsumed,
         },
       };
       commands.push({ type: "AppendText", elementId: "stream-output", text });
+
+      // Draw rope being pulled
+      const progress = toProgress(bytesConsumed, s.stream.totalBytes);
+      commands.push({ type: "DrawRope", elementId: "pulled-rope", progress });
     }
   }
 
@@ -101,6 +111,7 @@ function handleFileSelected(s: AppState, url: string): UpdateResult {
     { type: "SetClass", elementId: "stream-output", className: "hidden", active: true },
     { type: "SetClass", elementId: "empty-hint", className: "hidden", active: false },
     { type: "FetchContentLength", url },
+    { type: "DrawRope", elementId: "pulled-rope", progress: 0 },
   ];
   return [nextState, commands];
 }
