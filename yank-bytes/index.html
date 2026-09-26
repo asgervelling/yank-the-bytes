@@ -3,21 +3,24 @@
 <head>
     <style>
         body { margin: 0; overflow: hidden; }
-        #container {
+        /* #container {
             width: 100vw;
             height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-        }
+            align-items: start;
+        } */
     </style>
+    <link rel="stylesheet" href="dist/styles.css">
 </head>
 <body>
-    <div id="container">
-        <div class="metric" id="debug-counter">Crank value: 0</div>
-        <div class="metric" id="kinetic-velocity">Kinetic Velocity: 0</div>
-        <div class="metric" id="kinetic-acceleration">Kinetic Acceleration: 0</div>
+    <div id="container" class="w-screen h-screen flex flex-row">
+        <div class="w-1/6 flex flex-col border-r-2 p-2">
+            <div class="metric" id="crank">Crank value: 0</div>
+            <div class="metric" id="velocity">Velocity: 0</div>
+            <div class="metric" id="acceleration">Acceleration: 0</div>
+        </div>
     </div>
 
     <script type="module" src="dist/main.js"></script>

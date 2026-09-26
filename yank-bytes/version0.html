@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        body { margin: 0; background: #111; color: #fff; overflow: hidden; font-family: monospace; }
+        #canvas-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .metric { margin: 10px 0; font-size: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <!-- We added displays for the new physics numbers you want to test -->
+        <div class="metric" id="debug-counter">Crank value: 0</div>
+        <div class="metric" id="kinetic-velocity">Kinetic Velocity: 0</div>
+        <div class="metric" id="kinetic-acceleration">Kinetic Acceleration: 0</div>
+    </div>
+
+    <script>
+        const SampleFiles = Object.freeze({
+            WarAndPiece: "https://gutenberg.org",
+            Binary1GB: "https://hetzner.com",
+        });
+
+        const byteQueue = [];
+
+        async function startStream() {
+            const response = await fetch(SampleFiles.WarAndPiece);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+
+                for (let i = 0; i < value.length; i++) {
+                    byteQueue.push(value[i]);
+                }
+            }
+        }
+
+        function consumeBytesFromSpool(pullCount) {
+            if (byteQueue.length === 0) return "";
+            const rawBytes = byteQueue.splice(0, pullCount);
+            return decoder.decode(new Uint8Array(rawBytes));
+        }
+
+        let simCrankRot = 0;
+        
+        // --- NEW PHYSICS VARIABLES ---
+        let kineticVelocity = 0;
+        let previousKineticVelocity = 0;
+        let kineticAcceleration = 0;
+
+        const container = document.getElementById("canvas-container");
+        const display = document.getElementById("debug-counter");
+        
+        // Grab the new DOM elements to show the physics values
+        const velocityDisplay = document.getElementById("kinetic-velocity");
+        const accelerationDisplay = document.getElementById("kinetic-acceleration");
+
+        container.addEventListener("wheel", (event) => {
+            event.preventDefault();
+
+            const yankVelocity = event.deltaY;
+            simCrankRot = yankVelocity;
+
+            if (yankVelocity > 0) {
+                const factor = 10;
+                const bytesToFetch = Math.floor(yankVelocity / factor);
+                const newBytes = consumeBytesFromSpool(bytesToFetch);
+            }
+
+            // Your original immediate snapshot value display
+            display.textContent = `Crank Value: ${Math.floor(simCrankRot)}`;
+        }, { passive: false });
+
+        // --- THE ENGINE LOOP ---
+        // This background loop runs every single frame (e.g., 60 times a second)
+        // to constantly compute the deceleration and acceleration of the numbers.
+        function runPhysicsSimulation() {
+            // 1. Every frame, we bleed off energy from your original input speed
+            // If you aren't scrolling, simCrankRot gets pulled down to 0 over time.
+            simCrankRot *= 0.85; 
+
+            // 2. Smoothly slide the kinetic velocity toward the current crank speed
+            // This creates the feeling of mechanical mass or weight.
+            kineticVelocity += (simCrankRot - kineticVelocity) * 0.1;
+
+            // 3. Compute acceleration by finding the change in speed since the last frame
+            kineticAcceleration = kineticVelocity - previousKineticVelocity;
+
+            // 4. Update the history snapshot so it's ready for the next frame tick
+            previousKineticVelocity = kineticVelocity;
+
+            // 5. Render the new numbers to your screen
+            velocityDisplay.textContent = `Kinetic Velocity: ${kineticVelocity.toFixed(2)}`;
+            accelerationDisplay.textContent = `Kinetic Acceleration: ${kineticAcceleration.toFixed(4)}`;
+
+            // 6. Tell the browser to run this function again before drawing the next frame
+            requestAnimationFrame(runPhysicsSimulation);
+        }
+
+        // Start the background simulation loop instantly
+        requestAnimationFrame(runPhysicsSimulation);
+    </script>
+</body>
+</html>

@@ -4,13 +4,22 @@
   "type": "module",
   "description": "Small examples of the Command AST + Interpreter functional-frontend pattern in strict TypeScript.",
   "scripts": {
-    "build": "npm run build:ball && npm run build:cursor",
+    "build": "npm run build:ball && npm run build:cursor && npm run build:yank",
     "build:ball": "tsc -p command-ast-interpreter-example",
     "build:cursor": "tsc -p cursor-and-click-example",
-    "build:yank": "tsc -p yank-bytes",
-    "serve": "npx --yes http-server . -p 8080"
+    "build:yank": "tsc -p yank-bytes && npm run build:yank:css",
+    "build:yank:css": "tailwindcss -i yank-bytes/src/styles.css -o yank-bytes/dist/styles.css",
+    "watch:ball": "tsc -p command-ast-interpreter-example --watch",
+    "watch:cursor": "tsc -p cursor-and-click-example --watch",
+    "watch:yank": "tsc -p yank-bytes --watch",
+    "watch:yank:css": "tailwindcss -i yank-bytes/src/styles.css -o yank-bytes/dist/styles.css --watch=always --poll=300",
+    "serve": "npx --yes http-server . -p 8080 -c-1",
+    "dev": "concurrently -n tsc,css,serve \"npm run watch:yank\" \"npm run watch:yank:css\" \"npm run serve\""
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "concurrently": "^10.0.5",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.6.0"
   }
 }
