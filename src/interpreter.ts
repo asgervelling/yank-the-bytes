@@ -12,6 +12,26 @@ function queryRequiredElement(id: ElementId): HTMLElement {
 
 let activeStreamController: AbortController | undefined;
 
+// How much streamed text we keep sitting in the DOM at once. Anything older
+// than this has already scrolled out of view, so there's no reason to keep
+// rewriting it every frame
+const MAX_STREAMED_CHARS = 20_000;
+const streamedCharCounts = new WeakMap<HTMLElement, number>();
+
+// Appends text as its own small node (cheap: O(new text), unlike
+// `textContent +=`, which has to rebuild the *entire* existing content every
+// call), then trims the oldest text once we're holding more than we need.
+function appendBoundedText(element: HTMLElement, text: string): void {
+  element.appendChild(document.createTextNode(text));
+
+  let total = (streamedCharCounts.get(element) ?? 0) + text.length;
+  while (total > MAX_STREAMED_CHARS && element.firstChild) {
+    total -= (element.firstChild.textContent ?? "").length;
+    element.removeChild(element.firstChild);
+  }
+  streamedCharCounts.set(element, total);
+}
+
 function executeCommand(
   elements: Readonly<Record<ElementId, HTMLElement>>,
   dispatch: (event: AppEvent) => void,
@@ -19,14 +39,15 @@ function executeCommand(
 ): void {
   switch (command.type) {
     case "SetText": {
-      elements[command.elementId].textContent = command.text;
+      const element = elements[command.elementId];
+      element.textContent = command.text;
+      streamedCharCounts.set(element, command.text.length); // keep in sync with what's actually in the DOM
       break;
     }
     case "FetchContentLength": {
       fetch(command.url, { method: "HEAD" }).then((res) => {
         const header = res.headers.get("Content-Length");
         const totalBytes = header ? parseInt(header, 10) : null;
-        console.log("Content length:", totalBytes); // Debug
         dispatch({ type: "ContentLengthReceived", url: command.url, totalBytes });
       })
       break;
@@ -55,7 +76,7 @@ function executeCommand(
     }
     case "AppendText": {
       const element = elements[command.elementId];
-      element.textContent += command.text;
+      appendBoundedText(element, command.text);
       element.scrollTop = element.scrollHeight; // keep to newest text in view
       break;
     }

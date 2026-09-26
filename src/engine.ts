@@ -46,7 +46,6 @@ function handleBytesReceived(s: AppState, url: string, chunk: Uint8Array): Updat
   return [{ ...s, stream: { ...s.stream, bytes: merged, bytesReceived: s.stream.bytesReceived + chunk.length } }, []];
 }
 
-
 function handleTick(s: AppState): UpdateResult {
   const yankVelocity = s.yankVelocity * 0.85;
   const velocity = s.velocity + (yankVelocity - s.velocity) * 0.1;
@@ -61,7 +60,7 @@ function handleTick(s: AppState): UpdateResult {
   if (velocity > 0 && 
       s.stream !== undefined &&
       s.stream.bytes.length > 0) {
-    const pullFactor = s.stream.bytes.length > 1000000
+    const pullFactor = s.stream.totalBytes > 1000000
       ? PULL_FACTOR_LARGE
       : PULL_FACTOR_SMALL;
     const bytesToPull = Math.min(
