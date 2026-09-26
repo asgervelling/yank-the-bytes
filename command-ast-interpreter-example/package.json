@@ -1,0 +1,13 @@
+{
+  "name": "yank-the-bytes",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "serve": "npx --yes http-server . -p 8080"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
