@@ -1,0 +1,16 @@
+{
+  "name": "yank-the-bytes",
+  "private": true,
+  "type": "module",
+  "description": "Small examples of the Command AST + Interpreter functional-frontend pattern in strict TypeScript.",
+  "scripts": {
+    "build": "npm run build:ball && npm run build:cursor",
+    "build:ball": "tsc -p command-ast-interpreter-example",
+    "build:cursor": "tsc -p cursor-and-click-example",
+    "build:yank": "tsc -p yank-bytes",
+    "serve": "npx --yes http-server . -p 8080"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
