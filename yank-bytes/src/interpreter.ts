@@ -27,6 +27,28 @@ function executeCommand(
       })
       break;
     }
+    case "StartStream": {
+      (async () => {
+        const res = await fetch(command.url);
+        const reader = res.body!.getReader();
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          console.log(value);
+          dispatch({ type: "BytesReceived", chunk: value })
+        }
+      })();
+      break;
+    }
+    case "AppendText": {
+      const element = elements[command.elementId];
+      element.textContent += command.text;
+      element.scrollTop = element.scrollHeight; // keep to newest text in view
+      break;
+    }
+    case "SetClass":
+      elements[command.elementId].classList.toggle(command.className, command.active);
+      break;
   }
 }
 
@@ -35,12 +57,15 @@ export function bootstrap(): void {
     "crank": queryRequiredElement("crank"),
     "acceleration": queryRequiredElement("acceleration"),
     "velocity": queryRequiredElement("velocity"),
+    "text-sink": queryRequiredElement("text-sink"),
+    "empty-hint": queryRequiredElement("empty-hint"),
+    "stream-output": queryRequiredElement("stream-output"),
   };
 
   const initialState: AppState = {
     availableFiles: [
-      { displayName: "War and Peace",
-        url: "https://www.gutenberg.org/cache/epub/2600/pg2600.txt" },
+      { displayName: "War and Peace", url: "war-and-peace.txt" },
+      { displayName: "War and Peace (short excerpt)", url: "short.txt" },
     ],
     streamableFiles: [],
     stream: undefined,
@@ -62,6 +87,8 @@ export function bootstrap(): void {
     e.preventDefault();
     dispatch({ type: "Scroll", deltaY: e.deltaY})
   }, { passive: false });
+
+  dispatch({ type: "InitStreamableFiles" });
 
   const startClock = () => {
     // Call yourself recursively once per frame

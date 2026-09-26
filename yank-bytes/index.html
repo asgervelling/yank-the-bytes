@@ -3,14 +3,6 @@
 <head>
     <style>
         body { margin: 0; overflow: hidden; }
-        /* #container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: start;
-        } */
     </style>
     <link rel="stylesheet" href="dist/styles.css">
 </head>
@@ -20,6 +12,11 @@
             <div class="metric" id="crank">Crank value: 0</div>
             <div class="metric" id="velocity">Velocity: 0</div>
             <div class="metric" id="acceleration">Acceleration: 0</div>
+        </div>
+
+        <div id="text-sink" class="p-2 w-5/6">
+            <div id="empty-hint">Try scrolling</div>
+            <div id="stream-output" class="hidden h-full overflow-hidden"></div>
         </div>
     </div>
 
