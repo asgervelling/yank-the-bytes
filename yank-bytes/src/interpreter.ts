@@ -1,5 +1,5 @@
-import { update } from "./engine.js";
-import type { AppEvent, AppState, Command, ElementId } from "./types.js";
+import { createInitialState, update } from "./engine.js";
+import type { AppEvent, Command, ElementId } from "./types.js";
 
 function queryRequiredElement(id: ElementId): HTMLElement {
   const element = document.getElementById(id);
@@ -9,8 +9,10 @@ function queryRequiredElement(id: ElementId): HTMLElement {
   return element;
 }
 
+let activeStreamController: AbortController | undefined;
+
 function executeCommand(
-  elements: Readonly<Record<ElementId, HTMLElement>>, 
+  elements: Readonly<Record<ElementId, HTMLElement>>,
   dispatch: (event: AppEvent) => void,
   command: Command
 ): void {
@@ -28,14 +30,23 @@ function executeCommand(
       break;
     }
     case "StartStream": {
+      activeStreamController?.abort(); // stop reading whatever file was previously selected
+      const controller = new AbortController();
+      activeStreamController = controller;
+
       (async () => {
-        const res = await fetch(command.url);
-        const reader = res.body!.getReader();
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          console.log(value);
-          dispatch({ type: "BytesReceived", chunk: value })
+        try {
+          const res = await fetch(command.url, { signal: controller.signal });
+          const reader = res.body!.getReader();
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            dispatch({ type: "BytesReceived", url: command.url, chunk: value });
+          }
+        } catch (error) {
+          if (!(error instanceof DOMException && error.name === "AbortError")) {
+            console.error(`Stream for ${command.url} failed:`, error);
+          }
         }
       })();
       break;
@@ -62,18 +73,10 @@ export function bootstrap(): void {
     "stream-output": queryRequiredElement("stream-output"),
   };
 
-  const initialState: AppState = {
-    availableFiles: [
-      { displayName: "War and Peace", url: "war-and-peace.txt" },
-      { displayName: "War and Peace (short excerpt)", url: "short.txt" },
-    ],
-    streamableFiles: [],
-    stream: undefined,
-    yankVelocity: 0,
-    acceleration: 0,
-    velocity: 0,
-  };
-  let state = initialState;
+  let state = createInitialState([
+    { displayName: "War and Peace", url: "war-and-peace.txt" },
+    { displayName: "War and Peace (short excerpt)", url: "short.txt" },
+  ]);
 
   const dispatch = (event: Parameters<typeof update>[1]): void => {
     const [nextState, commands] = update(state, event);
@@ -88,7 +91,18 @@ export function bootstrap(): void {
     dispatch({ type: "Scroll", deltaY: e.deltaY})
   }, { passive: false });
 
-  dispatch({ type: "InitStreamableFiles" });
+  const warAndPeaceButton = document.getElementById("select-war-and-peace");
+  const shortButton = document.getElementById("select-short");
+  if (!warAndPeaceButton || !shortButton) {
+    throw new Error("Missing file-select buttons");
+  }
+
+  warAndPeaceButton.addEventListener(
+    "click",
+    () => dispatch({ type: "FileSelected", url: "war-and-peace.txt" }));
+  shortButton.addEventListener(
+    "click",
+    () => dispatch({ type: "FileSelected", url: "short.txt" }));
 
   const startClock = () => {
     // Call yourself recursively once per frame

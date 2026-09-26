@@ -2,18 +2,30 @@ import type { AppEvent, AppState, Command, File, Stream, StreamableFile, UpdateR
 
 const PULL_FACTOR = 0.3;
 
+export function createInitialState(availableFiles: File[]): AppState {
+  return {
+    availableFiles,
+    streamableFiles: [],
+    stream: undefined,
+    selectedUrl: undefined,
+    yankVelocity: 0,
+    acceleration: 0,
+    velocity: 0,
+  };
+}
+
 export function update(s: AppState, event: AppEvent): UpdateResult {
   switch (event.type) {
     case "Scroll":
       return handleScroll(s, event.deltaY)
     case "ClockTick":
       return handleTick(s);
-    case "InitStreamableFiles":
-      return handleInitStreamableFiles(s);
+    case "FileSelected":
+      return handleFileSelected(s, event.url);
     case "ContentLengthReceived":
       return handleContentLengthReceived(s, event.url, event.totalBytes);
     case "BytesReceived":
-      return handleBytesReceived(s, event.chunk);
+      return handleBytesReceived(s, event.url, event.chunk);
   }
 }
 
@@ -24,8 +36,8 @@ function handleScroll(s: AppState, deltaY: number): UpdateResult {
   return [{ ...s, yankVelocity: s.yankVelocity + deltaY }, commands];
 }
 
-function handleBytesReceived(s: AppState, chunk: Uint8Array): UpdateResult {
-  if (s.stream === undefined) return [s, []];
+function handleBytesReceived(s: AppState, url: string, chunk: Uint8Array): UpdateResult {
+  if (s.stream === undefined || url !== s.selectedUrl) return [s, []]; // stale chunk from an abandoned stream
   const merged = new Uint8Array(s.stream.bytes.length + chunk.length);
   merged.set(s.stream.bytes, 0);
   merged.set(chunk, s.stream.bytes.length);
@@ -75,16 +87,22 @@ function handleTick(s: AppState): UpdateResult {
   return [nextState, commands];
 }
 
-/**
- * Make HEAD requests to the available files,
- * to get their content lengths.
- */
-function handleInitStreamableFiles(s: AppState): UpdateResult {
-  const commands: Command[] = s.availableFiles.map((file) => ({
-    type: "FetchContentLength",
-    url: file.url,
-  }));
-  return [s, commands];
+function handleFileSelected(s: AppState, url: string): UpdateResult {
+  const nextState: AppState = { ...createInitialState(s.availableFiles), selectedUrl: url };
+  const file = s.availableFiles.find((f) => f.url === url);
+  const hintText = file ? `${file.displayName} selected. Try scrolling` : "Selected file not found";
+
+  const commands: Command[] = [
+    { type: "SetText", elementId: "crank", text: "Crank value: 0" },
+    { type: "SetText", elementId: "velocity", text: "Velocity: 0.00" },
+    { type: "SetText", elementId: "acceleration", text: "Acceleration: 0.0000" },
+    { type: "SetText", elementId: "stream-output", text: "" },
+    { type: "SetText", elementId: "empty-hint", text: hintText },
+    { type: "SetClass", elementId: "stream-output", className: "hidden", active: true },
+    { type: "SetClass", elementId: "empty-hint", className: "hidden", active: false },
+    { type: "FetchContentLength", url },
+  ];
+  return [nextState, commands];
 }
 
 function handleContentLengthReceived(
@@ -92,14 +110,18 @@ function handleContentLengthReceived(
   url: string,
   totalBytes: number | null
 ): UpdateResult {
+  if (url !== s.selectedUrl) {
+    return [s, []]; // a different file was picked before this response arrived
+  }
+
   if (totalBytes === null) {
-    alert("Debug: Path A");
+    console.warn(`Could not determine content length for ${url}`);
     return [s, []];
   }
 
   const file = s.availableFiles.find((f) => f.url === url);
   if (!file) {
-    alert("Debug: Path B");
+    console.warn(`Received content length for unknown file ${url}`);
     return [s, []];
   }
 

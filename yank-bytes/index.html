@@ -9,13 +9,16 @@
 <body>
     <div id="container" class="w-screen h-screen flex flex-row">
         <div class="w-1/6 flex flex-col border-r-2 p-2">
+            <button id="select-war-and-peace" type="button" class="mb-2 rounded border border-gray-400 px-3 py-1.5 text-sm hover:bg-gray-100">War and Peace</button>
+            <button id="select-short" type="button" class="mb-2 rounded border border-gray-400 px-3 py-1.5 text-sm hover:bg-gray-100">Short excerpt</button>
             <div class="metric" id="crank">Crank value: 0</div>
             <div class="metric" id="velocity">Velocity: 0</div>
             <div class="metric" id="acceleration">Acceleration: 0</div>
         </div>
 
+
         <div id="text-sink" class="p-2 w-5/6">
-            <div id="empty-hint">Try scrolling</div>
+            <div id="empty-hint">Select a file on the left</div>
             <div id="stream-output" class="hidden h-full overflow-hidden"></div>
         </div>
     </div>

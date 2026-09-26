@@ -32,6 +32,10 @@ export type AppState = {
   /** Current stream (undefined at start of program) */
   readonly stream: Stream | undefined;
 
+  /** URL of the file a button was last clicked for, so late/stale
+   * responses from a since-abandoned file can be recognized and ignored. */
+  readonly selectedUrl: string | undefined;
+
   readonly yankVelocity: number; // How hard you're pulling
   readonly acceleration: number;
   readonly velocity: number;
@@ -39,12 +43,12 @@ export type AppState = {
 
 export type AppEvent =
   | { readonly type: "ClockTick" }
-  | { readonly type: "InitStreamableFiles" }
+  | { readonly type: "FileSelected"; readonly url: string }
   | { readonly type: "ContentLengthReceived";
       readonly url: string;
       readonly totalBytes: number | null }
   | { readonly type: "Scroll", readonly deltaY: number }
-  | { readonly type: "BytesReceived", readonly chunk: Uint8Array };
+  | { readonly type: "BytesReceived", readonly url: string, readonly chunk: Uint8Array };
 
 // Represents a (browser) side effect
 export type Command =
