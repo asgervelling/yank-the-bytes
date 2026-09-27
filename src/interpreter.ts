@@ -44,14 +44,6 @@ function executeCommand(
       streamedCharCounts.set(element, command.text.length); // keep in sync with what's actually in the DOM
       break;
     }
-    case "FetchContentLength": {
-      fetch(command.url, { method: "HEAD" }).then((res) => {
-        const header = res.headers.get("Content-Length");
-        const totalBytes = header ? parseInt(header, 10) : null;
-        dispatch({ type: "ContentLengthReceived", url: command.url, totalBytes });
-      })
-      break;
-    }
     case "StartStream": {
       activeStreamController?.abort(); // stop reading whatever file was previously selected
       const controller = new AbortController();
@@ -100,8 +92,8 @@ export function initAndRun(): void {
   };
 
   let state = createInitialState([
-    { displayName: "War and Peace", url: "war-and-peace.txt" },
-    { displayName: "War and Peace (short excerpt)", url: "short.txt" },
+    { displayName: "War and Peace", url: "war-and-peace.txt", totalBytes: 3_351_244 },
+    { displayName: "War and Peace (short excerpt)", url: "short.txt", totalBytes: 1_113 },
   ]);
 
   const dispatch = (event: Parameters<typeof update>[1]): void => {

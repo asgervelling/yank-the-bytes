@@ -10,25 +10,19 @@ export type ElementId =
 export type File = {
   displayName: string;
   url: string;
-};
-
-export type StreamableFile = File & {
   totalBytes: number;
 };
 
-export type Stream = StreamableFile & {
+export type Stream = File & {
   decoder: TextDecoder;
   bytesReceived: number;
-  bytesConsumed: number; // by others
+  bytesConsumed: number;
   bytes: Uint8Array;
 };
 
 export type AppState = {
   /** Files to choose from, by configuration */
   availableFiles: File[];
-
-  /** Files that we can stream (we know their sizes) */
-  streamableFiles: StreamableFile[];
 
   /** Current stream (undefined at start of program) */
   stream: Stream | undefined;
@@ -45,9 +39,6 @@ export type AppState = {
 export type AppEvent =
   | { type: "ClockTick" }
   | { type: "FileSelected"; url: string }
-  | { type: "ContentLengthReceived";
-      url: string;
-      totalBytes: number | null }
   | { type: "Scroll", deltaY: number }
   | { type: "BytesReceived", url: string, chunk: Uint8Array };
 
@@ -55,7 +46,6 @@ export type AppEvent =
 export type Command =
   | { type: "SetText"; elementId: ElementId; text: string }
   | { type: "SetClass"; elementId: ElementId; className: string; active: boolean }
-  | { type: "FetchContentLength"; url: string }
   | { type: "AppendText", elementId: ElementId, text: string }
   | { type: "StartStream", url: string }
   | { type: "DrawRope", elementId: ElementId; progress: number };

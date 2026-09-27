@@ -1,4 +1,4 @@
-import type { AppEvent, AppState, Command, File, Stream, StreamableFile, UpdateResult } from "./types.js";
+import type { AppEvent, AppState, Command, File, Stream, UpdateResult } from "./types.js";
 import { toProgress } from "./visualize.js";
 
 const PULL_FACTOR_SMALL = 0.01;
@@ -7,7 +7,6 @@ const PULL_FACTOR_LARGE = 15;
 export function createInitialState(availableFiles: File[]): AppState {
   return {
     availableFiles,
-    streamableFiles: [],
     stream: undefined,
     selectedUrl: undefined,
     yankVelocity: 0,
@@ -24,8 +23,6 @@ export function update(s: AppState, event: AppEvent): UpdateResult {
       return handleTick(s);
     case "FileSelected":
       return handleFileSelected(s, event.url);
-    case "ContentLengthReceived":
-      return handleContentLengthReceived(s, event.url, event.totalBytes);
     case "BytesReceived":
       return handleBytesReceived(s, event.url, event.chunk);
   }
@@ -97,55 +94,32 @@ function handleTick(s: AppState): UpdateResult {
 }
 
 function handleFileSelected(s: AppState, url: string): UpdateResult {
-  const nextState: AppState = { ...createInitialState(s.availableFiles), selectedUrl: url };
   const file = s.availableFiles.find((f) => f.url === url);
-  const hintText = file ? `${file.displayName} selected. Try scrolling` : "Selected file not found";
+  if (!file) {
+    console.warn(`Selected unknown file ${url}`);
+    return [s, []];
+  }
+
+  const stream: Stream = {
+    ...file,
+    decoder: new TextDecoder("utf-8"),
+    bytesReceived: 0,
+    bytesConsumed: 0,
+    bytes: new Uint8Array(0),
+  };
+
+  const nextState: AppState = { ...createInitialState(s.availableFiles), selectedUrl: url, stream };
 
   const commands: Command[] = [
     { type: "SetText", elementId: "crank", text: "Crank value: 0" },
     { type: "SetText", elementId: "velocity", text: "Velocity: 0.00" },
     { type: "SetText", elementId: "acceleration", text: "Acceleration: 0.0000" },
     { type: "SetText", elementId: "stream-output", text: "" },
-    { type: "SetText", elementId: "empty-hint", text: hintText },
+    { type: "SetText", elementId: "empty-hint", text: `${file.displayName} selected. Try scrolling` },
     { type: "SetClass", elementId: "stream-output", className: "hidden", active: true },
     { type: "SetClass", elementId: "empty-hint", className: "hidden", active: false },
-    { type: "FetchContentLength", url },
+    { type: "StartStream", url },
     { type: "DrawRope", elementId: "pulled-rope", progress: 0 },
   ];
   return [nextState, commands];
-}
-
-function handleContentLengthReceived(
-  s: AppState,
-  url: string,
-  totalBytes: number | null
-): UpdateResult {
-  if (url !== s.selectedUrl) {
-    return [s, []]; // a different file was picked before this response arrived
-  }
-
-  if (totalBytes === null) {
-    console.warn(`Could not determine content length for ${url}`);
-    return [s, []];
-  }
-
-  const file = s.availableFiles.find((f) => f.url === url);
-  if (!file) {
-    console.warn(`Received content length for unknown file ${url}`);
-    return [s, []];
-  }
-
-  const streamableFile: StreamableFile = { ...file, totalBytes };
-  const stream: Stream = {
-    ...streamableFile,
-    decoder: new TextDecoder("utf-8"),
-    bytesReceived: 0,
-    bytesConsumed: 0,
-    bytes: new Uint8Array(0)
-  };
-  return [
-    { ...s,
-      streamableFiles: [...s.streamableFiles, streamableFile],
-      stream },
-    [{ type: "StartStream", url }]];
 }
