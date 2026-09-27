@@ -131,7 +131,7 @@ export function toProgress(bytesReceived: number, contentLength: number): number
 
 export function drawPulledRope(
     progress: number,
-    layout: PyramidLayout = { rows: 13 },
+    layout: PyramidLayout = { rows: 11 },
 ): string {
     const htmlStyle: PyramidRepresentation = {
         painted: '<div class="bg-black"></div>\n',
