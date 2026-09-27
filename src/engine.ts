@@ -1,8 +1,8 @@
 import type { AppEvent, AppState, Command, File, Stream, StreamableFile, UpdateResult } from "./types.js";
 import { toProgress } from "./visualize.js";
 
-const PULL_FACTOR_SMALL = 0.3;
-const PULL_FACTOR_LARGE = 50;
+const PULL_FACTOR_SMALL = 0.01;
+const PULL_FACTOR_LARGE = 15;
 
 export function createInitialState(availableFiles: File[]): AppState {
   return {
@@ -47,8 +47,8 @@ function handleBytesReceived(s: AppState, url: string, chunk: Uint8Array): Updat
 }
 
 function handleTick(s: AppState): UpdateResult {
-  const yankVelocity = s.yankVelocity * 0.85;
-  const velocity = s.velocity + (yankVelocity - s.velocity) * 0.1;
+  const yankVelocity = s.yankVelocity * 0.96;
+  const velocity = s.velocity + (yankVelocity - s.velocity) * 0.06;
   const acceleration = velocity - s.velocity;
 
   let nextState: AppState = { ...s, yankVelocity, velocity, acceleration };
