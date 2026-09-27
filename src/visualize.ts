@@ -1,9 +1,9 @@
 type PyramidRepresentation = {
-    painted: string;          // Landed rope
-    unpainted: string;        // Sky, or outside the pyramid
-    unpaintedInPath: string;  // Empty pile spot
-    rope: string;             // Hanging rope
-    rowEnd: string;           // Appended after each row
+    painted: string;
+    unpainted: string;
+    unpaintedInPath: string;
+    rope: string;
+    rowEnd: string;
 };
 
 const defaultOptions: PyramidRepresentation = {
@@ -15,9 +15,9 @@ const defaultOptions: PyramidRepresentation = {
 };
 
 type PyramidLayout = {
-    rows: number;            // Pyramid height (k)
-    skyRows?: number;        // Empty rows above the pyramid. Default: half of rows, rounded up
-    spoolDistance?: number;  // How far above the grid the spool is, in rows. Default: 2 × rows
+    rows: number;
+    skyRows?: number;
+    spoolDistance?: number;
 };
 
 function resolveLayout(layout: PyramidLayout) {
@@ -67,7 +67,7 @@ function pilePosition(n: number, rows: number): { i: number; j: number } {
 }
 
 function drawPyramid(
-    progress: number,                // 0 to 1
+    progress: number, // 0 to 1
     layout: PyramidLayout,
     repr: PyramidRepresentation = defaultOptions,
 ): string {
@@ -102,7 +102,7 @@ function drawPyramid(
             tipRow = skyRows + head.i;
             tipCol = head.j;
         } else {
-            tipRow = -1;                 // Fully landed, no rope in the air
+            tipRow = -1; // Fully landed, no rope in the air
             tipCol = -1;
         }
     }
@@ -131,7 +131,7 @@ export function toProgress(bytesReceived: number, contentLength: number): number
 
 export function drawPulledRope(
     progress: number,
-    layout: PyramidLayout = { rows: 7 },
+    layout: PyramidLayout = { rows: 13 },
 ): string {
     const htmlStyle: PyramidRepresentation = {
         painted: '<div class="bg-black"></div>\n',
@@ -166,13 +166,3 @@ function wrapInContainer(content: string, layout: PyramidLayout) {
     ${content}
 </div>`
 }
-
-const layout: PyramidLayout = { rows: 7 };
-
-const bytesReceived = 500;
-const contentLength = 800;
-
-const progress = toProgress(bytesReceived, contentLength);
-
-console.log(drawPyramid(progress, layout));
-console.log(drawPulledRope(progress, layout));
