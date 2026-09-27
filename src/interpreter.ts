@@ -92,7 +92,7 @@ export function initAndRun(): void {
   };
 
   let state = createInitialState([
-    { displayName: "War and Peace", url: "war-and-peace.txt", totalBytes: 3_351_244 },
+    { displayName: "War and Peace", url: "war-and-peace.txt", totalBytes: 3_332_332 },
     { displayName: "War and Peace (short excerpt)", url: "short.txt", totalBytes: 1_113 },
   ]);
 
