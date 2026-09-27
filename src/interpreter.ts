@@ -109,6 +109,25 @@ export function initAndRun(): void {
     dispatch({ type: "Scroll", deltaY: e.deltaY})
   }, { passive: false });
 
+  let lastTouchY: number | undefined;
+
+  window.addEventListener("touchstart", (e: TouchEvent) => {
+    lastTouchY = e.touches[0]?.clientY;
+  }, { passive: false });
+
+  window.addEventListener("touchmove", (e: TouchEvent) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    if (!touch || lastTouchY === undefined) return;
+    const deltaY = lastTouchY - touch.clientY;
+    lastTouchY = touch.clientY;
+    dispatch({ type: "Scroll", deltaY });
+  }, { passive: false });
+
+  window.addEventListener("touchend", () => {
+    lastTouchY = undefined;
+  });
+
   const warAndPeaceButton = document.getElementById("select-war-and-peace");
   const shortButton = document.getElementById("select-short");
   if (!warAndPeaceButton || !shortButton) {
